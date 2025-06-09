@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pool Pump Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1E40AF',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+
+
+<body class="bg-gray-50 font-sans">
+    <div class="container mx-auto p-6 max-w-4xl">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Pool Pump Control</h1>
+            <p class="text-gray-600 mt-2">Manage your pool pump settings with ease.</p>
+        </header>
+
+        <!-- Status Card -->
+        <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">System Status</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Pump State</p>
+                    <p id="status-state" class="text-lg font-bold text-gray-800">Loading...</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Speed</p>
+                    <p id="status-speed" class="text-lg font-bold text-gray-800">Loading...</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Power Usage</p>
+                    <p id="status-watts" class="text-lg font-bold text-gray-800">Loading...</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Mode</p>
+                    <p id="status-mode" class="text-lg font-bold text-gray-800">Loading...</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Time</p>
+                    <p id="status-time" class="text-lg font-bold text-gray-800">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Basic Controls -->
+        <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Basic Controls</h2>
+            <div class="flex items-center space-x-4">
+                <button id="toggle-pump" onclick="togglePump()"
+                    class="bg-primary hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    Toggle Pump
+                </button>
+                <div>
+                    <label for="speed" class="block text-sm font-medium text-gray-700">Speed (450-3450 RPM)</label>
+                    <input type="number" id="speed" min="450" max="3450"
+                        class="mt-1 p-2 border border-gray-300 rounded-lg w-32 focus:ring-primary focus:border-primary">
+                </div>
+            </div>
+            <button onclick="setSpeed()"
+                class="mt-4 bg-secondary hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                Apply Speed
+            </button>
+
+            <div>
+                <label for="selected-program" class="block text-sm font-medium text-gray-700">Selected Program
+                    (1-8)</label>
+                <select id="selected-program" class="mt-1 p-2 border border-gray-300 rounded-lg w-32">
+                    <option value="1">Program 1</option>
+                    <option value="2">Program 2</option>
+                    <option value="3">Program 3</option>
+                    <option value="4">Program 4</option>
+                    <option value="5">Program 5</option>
+                    <option value="6">Program 6</option>
+                    <option value="7">Program 7</option>
+                    <option value="8">Program 8</option>
+                </select>
+            </div>
+
+            <button onclick="setSelectedProgram()"
+                class="bg-secondary hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                Run Program
+            </button>
+            <button onclick="stop()"
+                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                Stop
+            </button>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Advanced Settings</h2>
+            <div class="accordion">
+                <div class="border-b border-gray-200">
+                    <button class="w-full text-left py-3 font-medium text-gray-700 flex justify-between items-center"
+                        onclick="toggleAccordion('pump-settings')">
+                        Pump Settings
+                        <svg class="w-5 h-5 transform transition-transform" id="pump-settings-icon" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="pump-settings" class="hidden">
+                        <form id="pump-settings-form" class="grid grid-cols-2 gap-4 p-4">
+                            <div>
+                                <label for="ramp" class="block text-sm font-medium text-gray-700">Ramp (100-200)</label>
+                                <input type="number" id="ramp" min="100" max="200"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="celsius" class="block text-sm font-medium text-gray-700">Celsius</label>
+                                <input type="checkbox" id="celsius" class="mt-1 h-5 w-5">
+                            </div>
+                            <div>
+                                <label for="fahrenheit"
+                                    class="block text-sm font-medium text-gray-700">Fahrenheit</label>
+                                <input type="checkbox" id="fahrenheit" class="mt-1 h-5 w-5">
+                            </div>
+                            <div>
+                                <label for="contrast" class="block text-sm font-medium text-gray-700">Contrast
+                                    (1-3)</label>
+                                <input type="number" id="contrast" min="1" max="3"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="address" class="block text-sm font-medium text-gray-700">Address
+                                    (96-97)</label>
+                                <input type="number" id="address" min="96" max="97"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="id" class="block text-sm font-medium text-gray-700">ID (1-2)</label>
+                                <input type="number" id="id" min="1" max="2"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="ampm" class="block text-sm font-medium text-gray-700">AM/PM</label>
+                                <input type="checkbox" id="ampm" class="mt-1 h-5 w-5">
+                            </div>
+                            <div>
+                                <label for="max_rpm" class="block text-sm font-medium text-gray-700">Max RPM
+                                    (3445-3450)</label>
+                                <input type="number" id="max_rpm" min="3445" max="3450"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="min_rpm" class="block text-sm font-medium text-gray-700">Min RPM
+                                    (1100-1105)</label>
+                                <input type="number" id="min_rpm" min="1100" max="1105"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="quick_rpm" class="block text-sm font-medium text-gray-700">Quick Clean RPM
+                                    (2000-3000)</label>
+                                <input type="number" id="quick_rpm" min="2000" max="3000"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="quick_timer_hours" class="block text-sm font-medium text-gray-700">Quick
+                                    Timer (hours: 0-9, minutes: 0-59)</label>
+                                <div class="flex space-x-2">
+                                    <input type="number" id="quick_timer_hours" min="0" max="9"
+                                        class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Hours">
+                                    <input type="number" id="quick_timer_minutes" min="0" max="59"
+                                        class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Minutes">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="prime_enable" class="block text-sm font-medium text-gray-700">Prime
+                                    Enable</label>
+                                <input type="checkbox" id="prime_enable" class="mt-1 h-5 w-5">
+                            </div>
+                            <div>
+                                <label for="prime_max_time" class="block text-sm font-medium text-gray-700">Prime Max
+                                    Time (1-30 min)</label>
+                                <input type="number" id="prime_max_time" min="1" max="30"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="prime_sensitivity" class="block text-sm font-medium text-gray-700">Prime
+                                    Sensitivity (1-100)</label>
+                                <input type="number" id="prime_sensitivity" min="1" max="100"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="prime_delay" class="block text-sm font-medium text-gray-700">Prime Delay
+                                    (1-600 min)</label>
+                                <input type="number" id="prime_delay" min="1" max="600"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="antifreeze_enable"
+                                    class="block text-sm font-medium text-gray-700">Antifreeze Enable</label>
+                                <input type="checkbox" id="antifreeze_enable" class="mt-1 h-5 w-5">
+                            </div>
+                            <div>
+                                <label for="antifreeze_rpm" class="block text-sm font-medium text-gray-700">Antifreeze
+                                    RPM (1100-3000)</label>
+                                <input type="number" id="antifreeze_rpm" min="1100" max="3000"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="antifreeze_temp" class="block text-sm font-medium text-gray-700">Antifreeze
+                                    Temp (40-50°F)</label>
+                                <input type="number" id="antifreeze_temp" min="40" max="50"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="svrs_restart_enable" class="block text-sm font-medium text-gray-700">SVRS
+                                    Restart Enable</label>
+                                <input type="checkbox" id="svrs_restart_enable" class="mt-1 h-5 w-5">
+                            </div>
+                            <div>
+                                <label for="svrs_restart_timer" class="block text-sm font-medium text-gray-700">SVRS
+                                    Restart Timer (30-300 sec)</label>
+                                <input type="number" id="svrs_restart_timer" min="30" max="300"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                            <div>
+                                <label for="time_out_timer_hours" class="block text-sm font-medium text-gray-700">Time
+                                    Out Timer (hours: 0-9, minutes: 0-59)</label>
+                                <div class="flex space-x-2">
+                                    <input type="number" id="time_out_timer_hours" min="0" max="9"
+                                        class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Hours">
+                                    <input type="number" id="time_out_timer_minutes" min="0" max="59"
+                                        class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Minutes">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="running_program" class="block text-sm font-medium text-gray-700">Running
+                                    Program (1-4)</label>
+                                <input type="number" id="running_program" min="1" max="4"
+                                    class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                            </div>
+                        </form>
+                        <button onclick="savePumpSettings()"
+                            class="mt-4 bg-secondary hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                            Save Pump Settings
+                        </button>
+                    </div>
+                </div>
+                <div class="border-b border-gray-200">
+                    <button class="w-full text-left py-3 font-medium text-gray-700 flex justify-between items-center"
+                        onclick="toggleAccordion('program-settings')">
+                        Program Settings
+                        <svg class="w-5 h-5 transform transition-transform" id="program-settings-icon" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="program-settings" class="hidden">
+                        <div id="program-tabs" class="border-b border-gray-200 mb-4 flex flex-wrap p-2">
+                            <!-- Program tabs will be dynamically loaded here -->
+                        </div>
+                        <div id="program-content">
+                            <!-- Program content will be dynamically loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let serverTime = { hour: 0, minute: 0, second: 0 };
+        let ampm = JSON.parse(localStorage.getItem('pumpConfig') || '{}')?.ampm === 'true'; // Default to false if not set
+        let currentProgramId = 1;
+
+        // If ampm is set in localStorage, use it
+        function formatTime(hour, minute, second) {
+            if (!ampm) {
+                return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
+            }
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            const displayMinute = minute.toString().padStart(2, '0');
+            const displaySecond = second.toString().padStart(2, '0');
+            return `${displayHour}:${displayMinute}:${displaySecond} ${period}`;
+        }
+
+        function updateClock() {
+            serverTime.second++;
+            if (serverTime.second >= 60) {
+                serverTime.second = 0;
+                serverTime.minute++;
+            }
+            if (serverTime.minute >= 60) {
+                serverTime.minute = 0;
+                serverTime.hour = (serverTime.hour + 1) % 24;
+            }
+            document.getElementById('status-time').innerText = formatTime(serverTime.hour, serverTime.minute, serverTime.second);
+        }
+
+        function toggleAccordion(sectionId) {
+            const section = document.getElementById(sectionId);
+            const icon = document.getElementById(`${sectionId}-icon`);
+            section.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+            if (!section.classList.contains('hidden')) {
+                if (sectionId === 'program-settings') {
+                    // Load programs when the section is opened
+                    const config = JSON.parse(localStorage.getItem('pumpConfig') || '{}');
+                    loadProgramTabs(config.programs || []);
+                    const selectedProgramId = localStorage.getItem('selectedProgramId') || (config.programs && config.programs.length > 0 ? config.programs[0].program_id : null);
+                    if (selectedProgramId) {
+                        selectProgramTab(parseInt(selectedProgramId));
+                    }
+                }
+            }
+        }
+
+        function selectProgramTab(programId) {
+            currentProgramId = programId;
+            localStorage.setItem('selectedProgramId', programId);
+            document.querySelectorAll('.program-tab').forEach(tab => {
+                tab.classList.remove('bg-gray-200', 'font-bold');
+                if (parseInt(tab.dataset.programId) === programId) {
+                    tab.classList.add('bg-gray-200', 'font-bold');
+                }
+            });
+            loadProgramContent(programId);
+        }
+
+        function loadProgramTabs(programs) {
+            const tabsDiv = document.getElementById('program-tabs');
+            tabsDiv.innerHTML = '';
+            programs.forEach(program => {
+                const tab = document.createElement('button');
+                tab.className = 'program-tab px-4 py-2 font-medium text-gray-700 rounded-t-lg hover:bg-gray-100';
+                tab.dataset.programId = program.program_id;
+                tab.innerText = `Program ${program.program_id}`;
+                tab.onclick = () => selectProgramTab(program.program_id);
+                tabsDiv.appendChild(tab);
+            });
+            // Get selected program from localStorage or default to the first one
+            const selectedProgramId = localStorage.getItem('selectedProgramId') || (programs.length > 0 ? programs[0].program_id : null);
+            if (selectedProgramId) {
+                selectProgramTab(parseInt(selectedProgramId));
+            }
+        }
+
+        function loadProgramContent(programId) {
+            const config = JSON.parse(localStorage.getItem('pumpConfig') || '{}');
+            const program = config.programs ? config.programs.find(p => p.program_id === programId) : null;
+            const contentDiv = document.getElementById('program-content');
+            contentDiv.innerHTML = `
+                <form id="program-settings-form-${programId}" class="p-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="program_rpm_${programId}" class="block text-sm font-medium text-gray-700">RPM (450-3450)</label>
+                            <input type="number" id="program_rpm_${programId}" min="450" max="3450" value="${program ? program.rpm : 450}" class="mt-1 p-2 border border-gray-300 rounded-lg w-full">
+                        </div>
+                        <div>
+                            <label for="program_mode_${programId}" class="block text-sm font-medium text-gray-700">Mode</label>
+                            <select id="program_mode_${programId}" class="mt-1 p-2 border border-gray-300 rounded-lg w-full" onchange="toggleProgramInputs(${programId})">
+                                <option value="MANUAL" ${program && program.mode === 'MANUAL' ? 'selected' : ''}>Manual</option>
+                                <option value="EGG_TIMER" ${program && program.mode === 'EGG_TIMER' ? 'selected' : ''}>Egg Timer</option>
+                                <option value="SCHEDULE" ${program && program.mode === 'SCHEDULE' ? 'selected' : ''}>Schedule</option>
+                            </select>
+                        </div>
+                        <div id="schedule_start_${programId}" class="${program && program.mode !== 'SCHEDULE' ? 'hidden' : ''}">
+                            <label for="program_schedule_start_hours_${programId}" class="block text-sm font-medium text-gray-700">Schedule Start (hours: 0-23, minutes: 0-59)</label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="program_schedule_start_hours_${programId}" min="0" max="23" value="${program ? program.schedule_start[0] : 0}" class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Hours">
+                                <input type="number" id="program_schedule_start_minutes_${programId}" min="0" max="59" value="${program ? program.schedule_start[1] : 0}" class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Minutes">
+                            </div>
+                        </div>
+                        <div id="schedule_end_${programId}" class="${program && program.mode !== 'SCHEDULE' ? 'hidden' : ''}">
+                            <label for="program_schedule_end_hours_${programId}" class="block text-sm font-medium text-gray-700">Schedule End (hours: 0-23, minutes: 0-59)</label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="program_schedule_end_hours_${programId}" min="0" max="23" value="${program ? program.schedule_end[0] : 0}" class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Hours">
+                                <input type="number" id="program_schedule_end_minutes_${programId}" min="0" max="59" value="${program ? program.schedule_end[1] : 0}" class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Minutes">
+                            </div>
+                        </div>
+                        <div id="egg_timer_${programId}" class="${program && program.mode !== 'EGG_TIMER' ? 'hidden' : ''}">
+                            <label for="program_egg_timer_hours_${programId}" class="block text-sm font-medium text-gray-700">Egg Timer (hours: 0-23, minutes: 0-59)</label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="program_egg_timer_hours_${programId}" min="0" max="23" value="${program ? program.egg_timer[0] : 0}" class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Hours">
+                                <input type="number" id="program_egg_timer_minutes_${programId}" min="0" max="59" value="${program ? program.egg_timer[1] : 0}" class="mt-1 p-2 border border-gray-300 rounded-lg w-16" placeholder="Minutes">
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onclick="saveProgram(${programId})"
+                        class="mt-4 bg-secondary hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                    >
+                        Save Program ${programId}
+                    </button>
+                </form>
+            `;
+            toggleProgramInputs(programId);
+        }
+
+        function toggleProgramInputs(programId) {
+            const mode = document.getElementById(`program_mode_${programId}`)?.value;
+            if (mode) {
+                document.getElementById(`schedule_start_${programId}`)?.classList.toggle('hidden', mode !== 'SCHEDULE');
+                document.getElementById(`schedule_end_${programId}`)?.classList.toggle('hidden', mode !== 'SCHEDULE');
+                document.getElementById(`egg_timer_${programId}`)?.classList.toggle('hidden', mode !== 'EGG_TIMER');
+            }
+        }
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                document.getElementById('status-state').innerText = data.state ? 'ON' : 'OFF';
+                document.getElementById('status-speed').innerText = `${data.speed} RPM`;
+                document.getElementById('status-watts').innerText = `${data.watts} W`;
+                document.getElementById('status-mode').innerText = data.mode;
+                document.getElementById('toggle-pump').innerText = data.state ? 'Turn Off' : 'Turn On';
+                document.getElementById('toggle-pump').classList.toggle('bg-primary', !data.state);
+                document.getElementById('toggle-pump').classList.toggle('bg-red-500', data.state);
+                // Disabled because it conflict with input changes
+                //document.getElementById('speed').value = data.speed;
+
+                // Update server time
+                serverTime.hour = data.time[0];
+                serverTime.minute = data.time[1];
+                serverTime.second = 0; // Reset seconds on sync
+                updateClock();
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        }
+
+        async function fetchConfig() {
+            try {
+                const response = await fetch('/config');
+                const data = await response.json();
+                localStorage.setItem('pumpConfig', JSON.stringify(data));
+
+                // Populate pump settings
+                document.getElementById('ramp').value = data.ramp;
+                document.getElementById('celsius').checked = data.celsius;
+                document.getElementById('fahrenheit').checked = data.fahrenheit;
+                document.getElementById('contrast').value = data.contrast;
+                document.getElementById('address').value = data.address;
+                document.getElementById('id').value = data.id;
+                document.getElementById('ampm').checked = data.ampm;
+                document.getElementById('max_rpm').value = data.max_rpm;
+                document.getElementById('min_rpm').value = data.min_rpm;
+                document.getElementById('quick_rpm').value = data.quick_rpm;
+                document.getElementById('quick_timer_hours').value = data.quick_timer[0];
+                document.getElementById('quick_timer_minutes').value = data.quick_timer[1];
+                document.getElementById('prime_enable').checked = data.prime_enable;
+                document.getElementById('prime_max_time').value = data.prime_max_time;
+                document.getElementById('prime_sensitivity').value = data.prime_sensitivity;
+                document.getElementById('prime_delay').value = data.prime_delay;
+                document.getElementById('antifreeze_enable').checked = data.antifreeze_enable;
+                document.getElementById('antifreeze_rpm').value = data.antifreeze_rpm;
+                document.getElementById('antifreeze_temp').value = data.antifreeze_temp;
+                document.getElementById('svrs_restart_enable').checked = data.svrs_restart_enable;
+                document.getElementById('svrs_restart_timer').value = data.svrs_restart_timer;
+                document.getElementById('time_out_timer_hours').value = data.time_out_timer[0];
+                document.getElementById('time_out_timer_minutes').value = data.time_out_timer[1];
+                document.getElementById('running_program').value = data.running_program;
+                // Load program tabs dynamically
+                loadProgramTabs(data.programs || []);
+            } catch (error) {
+                console.error('Error fetching config:', error);
+            }
+        }
+
+        async function togglePump() {
+            console.log('Toggling pump state...', JSON.stringify({ state: !document.getElementById('status-state').innerText.includes('ON') }));
+            await fetch('/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ state: Number(!document.getElementById('status-state').innerText.includes('ON')) })
+            });
+            fetchStatus();
+        }
+
+        async function stop() {
+            console.log('Stopping pump...');
+            await fetch('/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            fetchStatus();
+        }
+
+        async function setSpeed() {
+            const speed = parseInt(document.getElementById('speed').value);
+            if (isNaN(speed) || speed < 450 || speed > 3450) {
+                alert('Speed must be between 450 and 3450 RPM');
+                return;
+            }
+            await fetch('/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ speed: speed })
+            });
+            fetchStatus();
+        }
+
+        async function savePumpSettings() {
+            const settings = {
+                ramp: parseInt(document.getElementById('ramp').value),
+                celsius: document.getElementById('celsius').checked,
+                fahrenheit: document.getElementById('fahrenheit').checked,
+                contrast: parseInt(document.getElementById('contrast').value),
+                address: parseInt(document.getElementById('address').value),
+                id: parseInt(document.getElementById('id').value),
+                ampm: document.getElementById('ampm').checked,
+                max_rpm: parseInt(document.getElementById('max_rpm').value),
+                min_rpm: parseInt(document.getElementById('min_rpm').value),
+                quick_rpm: parseInt(document.getElementById('quick_rpm').value),
+                quick_timer: [
+                    parseInt(document.getElementById('quick_timer_hours').value),
+                    parseInt(document.getElementById('quick_timer_minutes').value)
+                ],
+                prime_enable: document.getElementById('prime_enable').checked,
+                prime_max_time: parseInt(document.getElementById('prime_max_time').value),
+                prime_sensitivity: parseInt(document.getElementById('prime_sensitivity').value),
+                prime_delay: parseInt(document.getElementById('prime_delay').value),
+                antifreeze_enable: document.getElementById('antifreeze_enable').checked,
+                antifreeze_rpm: parseInt(document.getElementById('antifreeze_rpm').value),
+                antifreeze_temp: parseInt(document.getElementById('antifreeze_temp').value),
+                svrs_restart_enable: document.getElementById('svrs_restart_enable').checked,
+                svrs_restart_timer: parseInt(document.getElementById('svrs_restart_timer').value),
+                time_out_timer: [
+                    parseInt(document.getElementById('time_out_timer_hours').value),
+                    parseInt(document.getElementById('time_out_timer_minutes').value)
+                ],
+                running_program: parseInt(document.getElementById('running_program').value)
+            };
+
+            const ranges = {
+                ramp: [100, 200],
+                contrast: [1, 3],
+                address: [96, 97],
+                id: [1, 2],
+                max_rpm: [3445, 3450],
+                min_rpm: [1100, 1105],
+                quick_rpm: [2000, 3000],
+                prime_max_time: [1, 30],
+                prime_sensitivity: [1, 100],
+                prime_delay: [1, 600],
+                antifreeze_rpm: [1100, 3000],
+                antifreeze_temp: [40, 50],
+                svrs_restart_timer: [30, 300],
+                running_program: [1, 4]
+            };
+
+            for (const [key, value] of Object.entries(settings)) {
+                if (['quick_timer', 'time_out_timer'].includes(key)) {
+                    const [hours, minutes] = value;
+                    if (isNaN(hours) || isNaN(minutes) || hours < 0 || (key === 'quick_timer' && hours > 9) || minutes < 0 || minutes > 59) {
+                        alert(`${key.replace('_', ' ')} must have hours ${key === 'quick_timer' ? '0-9' : '0-23'}, minutes 0-59`);
+                        return;
+                    }
+                } else if (typeof value === 'number' && ranges[key]) {
+                    if (isNaN(value) || value < ranges[key][0] || value > ranges[key][1]) {
+                        alert(`${key.replace('_', ' ')} must be between ${ranges[key][0]} and ${ranges[key][1]}`);
+                        return;
+                    }
+                }
+            }
+
+            await fetch('/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            fetchStatus();
+        }
+
+        async function saveProgram(programId) {
+            const mode = document.getElementById(`program_mode_${programId}`).value;
+            const rpm = parseInt(document.getElementById(`program_rpm_${programId}`).value);
+            const schedule_start_hours = parseInt(document.getElementById(`program_schedule_start_hours_${programId}`).value);
+            const schedule_start_minutes = parseInt(document.getElementById(`program_schedule_start_minutes_${programId}`).value);
+            const schedule_end_hours = parseInt(document.getElementById(`program_schedule_end_hours_${programId}`).value);
+            const schedule_end_minutes = parseInt(document.getElementById(`program_schedule_end_minutes_${programId}`).value);
+            const egg_timer_hours = parseInt(document.getElementById(`program_egg_timer_hours_${programId}`).value);
+            const egg_timer_minutes = parseInt(document.getElementById(`program_egg_timer_minutes_${programId}`).value);
+
+            /*if (isNaN(rpm) || rpm < 450 || rpm > 3450) {
+                alert(`Program ${programId} RPM must be between 450 and 3450`);
+                return;
+            }*/
+            if (!['MANUAL', 'EGG_TIMER', 'SCHEDULE'].includes(mode)) {
+                alert(`Invalid mode for Program ${programId}`);
+                return;
+            }
+            if (mode === 'SCHEDULE') {
+                if (isNaN(schedule_start_hours) || schedule_start_hours < 0 || schedule_start_hours > 23 ||
+                    isNaN(schedule_start_minutes) || schedule_start_minutes < 0 || schedule_start_minutes > 59) {
+                    alert(`Program ${programId} schedule start must have hours 0-23, minutes 0-59`);
+                    return;
+                }
+                if (isNaN(schedule_end_hours) || schedule_end_hours < 0 || schedule_end_hours > 23 ||
+                    isNaN(schedule_end_minutes) || schedule_end_minutes < 0 || schedule_end_minutes > 59) {
+                    alert(`Program ${programId} schedule end must have hours 0-23, minutes 0-59`);
+                    return;
+                }
+            }
+            if (mode === 'EGG_TIMER') {
+                if (isNaN(egg_timer_hours) || egg_timer_hours < 0 || egg_timer_hours > 23 ||
+                    isNaN(egg_timer_minutes) || egg_timer_minutes < 0 || egg_timer_minutes > 59) {
+                    alert(`Program ${programId} egg timer must have hours 0-23, minutes 0-59`);
+                    return;
+                }
+            }
+
+            const control = {
+                program_id: programId,
+                rpm: rpm,
+                mode: mode,
+                schedule_start: mode === 'SCHEDULE' ? [schedule_start_hours, schedule_start_minutes] : null,
+                schedule_end: mode === 'SCHEDULE' ? [schedule_end_hours, schedule_end_minutes] : null,
+                egg_timer: mode === 'EGG_TIMER' ? [egg_timer_hours, egg_timer_minutes] : null
+            };
+            console.log(`Sending program control for Program ${programId}:`, control);
+            await fetch('/program', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(control)
+            });
+            fetchConfig();
+        }
+
+        async function setSelectedProgram() {
+            const program = parseInt(document.getElementById('selected-program').value);
+            if (isNaN(program) || program < 1 || program > 8) {
+                alert('Selected program must be between 1 and 8');
+                return;
+            }
+            await fetch('/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ selected_program: program })
+            });
+            fetchStatus();
+        }
+
+        // Fetch status and config on startup, start clock
+        window.onload = () => {
+            fetchStatus();
+            fetchConfig();
+            setInterval(fetchStatus, 5000);
+            setInterval(updateClock, 1000);
+        };
+    </script>
+</body>
+
+</html>
