@@ -27,7 +27,7 @@ logger.add("pool_pump.log", rotation="1 MB", level="DEBUG")
 logging.getLogger("uvicorn.access").disabled = True
 
 # Pump ID and serial port
-PUMP_ID = 0x60
+PUMP_ID = 1
 SERIAL_PORT = "/dev/ttyUSB0"
 os.environ["PYPENTAIR_PORT"] = SERIAL_PORT
 
@@ -108,7 +108,7 @@ async def get_root():
 @app.get("/status")
 async def get_status() -> StatusResponse:
     try:
-        pump = pypentair.Pump(id=1)
+        pump = pypentair.Pump(id=PUMP_ID)
         status = pump.status
         #logger.debug(f"Raw status: {status}")
         response = StatusResponse(
@@ -128,7 +128,7 @@ async def get_status() -> StatusResponse:
 @app.get("/config")
 async def get_config():
     try:
-        pump = pypentair.Pump(id=1)
+        pump = pypentair.Pump(id=PUMP_ID)
         programs = []
         for i in range(1, 5):  # Programs 1-4
             logger.debug(f"Retrieving program {i}")
@@ -195,7 +195,7 @@ async def get_config():
 @app.post("/run")
 async def run_pump(control: RunRequest):
     try:
-        pump = pypentair.Pump(id=1)
+        pump = pypentair.Pump(id=PUMP_ID)
         pump.run = control.state
         logger.info(f"Pump {'started' if control.state else 'stopped'} (pump.run={pump.run})")
         return {"status": "success", "message": f"Pump {'started' if control.state else 'stopped'}"}
@@ -206,7 +206,7 @@ async def run_pump(control: RunRequest):
 @app.post("/stop")
 async def stop_pump():
     try:
-        pump = pypentair.Pump(id=1)
+        pump = pypentair.Pump(id=PUMP_ID)
         pump.stop
         logger.info("Pump stopped")
         return {"status": "success", "message": "Pump stopped"}
@@ -217,7 +217,7 @@ async def stop_pump():
 @app.post("/control")
 async def control_pump(control: PumpControl):
     try:
-        pump = pypentair.Pump(id=1)
+        pump = pypentair.Pump(id=PUMP_ID)
 
         if control.state is not None:
             pump.run = 0x0A if control.state else 0x04
@@ -430,7 +430,7 @@ async def control_program(control: ProgramControl):
             raise HTTPException(
                 status_code=400, detail="Program ID must be between 1 and 8"
             )
-        pump = pypentair.Pump(id=1)
+        pump = pypentair.Pump(id=PUMP_ID)
 
         # Check if pump running (via mode). If so, respond with error
         logger.debug(f"Current pump mode: {pump.mode}")
@@ -521,6 +521,7 @@ if __name__ == "__main__":
     logger.info("Starting FastAPI application")
     uvicorn.run(
         "main:app",
+        host="0.0.0.0",
         port=8000,
         reload=True,
         reload_dirs=[".", "./templates", "./static"]
