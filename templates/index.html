@@ -57,47 +57,54 @@
         </div>
 
         <!-- Basic Controls -->
-        <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+        <div class="bg-white shadow-lg rounded-lg p-6 mb-6" style="gap: 20px; display: flex; flex-flow: column;">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Basic Controls</h2>
-            <div class="flex items-center space-x-4">
-                <button id="toggle-pump" onclick="togglePump()"
-                    class="bg-primary hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                    Toggle Pump
-                </button>
+            <button id="toggle-remote-control" onclick="toggleRemoteControl()"
+                class="bg-primary hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                Loading remote control status...
+            </button>
+            <button id="toggle-pump" onclick="togglePump()"
+                class="bg-primary hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                Loading status...
+            </button>
+
+            <div class="flex items-end space-x-4">
                 <div>
                     <label for="speed" class="block text-sm font-medium text-gray-700">Speed (450-3450 RPM)</label>
                     <input type="number" id="speed" min="450" max="3450"
                         class="mt-1 p-2 border border-gray-300 rounded-lg w-32 focus:ring-primary focus:border-primary">
                 </div>
-            </div>
-            <button onclick="setSpeed()"
-                class="mt-4 bg-secondary hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                Apply Speed
-            </button>
-
-            <div>
-                <label for="selected-program" class="block text-sm font-medium text-gray-700">Selected Program
-                    (1-8)</label>
-                <select id="selected-program" class="mt-1 p-2 border border-gray-300 rounded-lg w-32">
-                    <option value="1">Program 1</option>
-                    <option value="2">Program 2</option>
-                    <option value="3">Program 3</option>
-                    <option value="4">Program 4</option>
-                    <option value="5">Program 5</option>
-                    <option value="6">Program 6</option>
-                    <option value="7">Program 7</option>
-                    <option value="8">Program 8</option>
-                </select>
+                <button onclick="setSpeed()"
+                    class="mt-4 bg-secondary hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    Apply Speed
+                </button>
             </div>
 
-            <button onclick="setSelectedProgram()"
-                class="bg-secondary hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                Run Program
-            </button>
-            <button onclick="stop()"
-                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                Stop
-            </button>
+            <div class="flex items-end space-x-4">
+                <div>
+                    <label for="selected-program" class="block text-sm font-medium text-gray-700">Selected Program
+                        (1-8)</label>
+                    <select id="selected-program" class="mt-1 p-2 border border-gray-300 rounded-lg w-32">
+                        <option value="1">Program 1</option>
+                        <option value="2">Program 2</option>
+                        <option value="3">Program 3</option>
+                        <option value="4">Program 4</option>
+                        <option value="5">Program 5</option>
+                        <option value="6">Program 6</option>
+                        <option value="7">Program 7</option>
+                        <option value="8">Program 8</option>
+                    </select>
+                </div>
+                <button onclick="setSelectedProgram()"
+                    class="mt-4 bg-secondary hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    Run Program
+                </button>
+                <button id="stop-button" onclick="stop()"
+                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled>
+                    Stop
+                </button>
+            </div>
         </div>
 
         <!-- Advanced Settings -->
@@ -275,33 +282,27 @@
     </div>
 
     <script>
-        let serverTime = { hour: 0, minute: 0, second: 0 };
+        let serverTime = { hour: 0, minute: 0 };
         let ampm = JSON.parse(localStorage.getItem('pumpConfig') || '{}')?.ampm === 'true'; // Default to false if not set
         let currentProgramId = 1;
 
         // If ampm is set in localStorage, use it
-        function formatTime(hour, minute, second) {
+        function formatTime(hour, minute) {
             if (!ampm) {
-                return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
+                return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
             }
             const period = hour >= 12 ? 'PM' : 'AM';
             const displayHour = hour % 12 || 12;
             const displayMinute = minute.toString().padStart(2, '0');
-            const displaySecond = second.toString().padStart(2, '0');
-            return `${displayHour}:${displayMinute}:${displaySecond} ${period}`;
+            return `${displayHour}:${displayMinute} ${period}`;
         }
 
         function updateClock() {
-            serverTime.second++;
-            if (serverTime.second >= 60) {
-                serverTime.second = 0;
-                serverTime.minute++;
-            }
             if (serverTime.minute >= 60) {
                 serverTime.minute = 0;
                 serverTime.hour = (serverTime.hour + 1) % 24;
             }
-            document.getElementById('status-time').innerText = formatTime(serverTime.hour, serverTime.minute, serverTime.second);
+            document.getElementById('status-time').innerText = formatTime(serverTime.hour, serverTime.minute);
         }
 
         function toggleAccordion(sectionId) {
@@ -422,9 +423,12 @@
                 document.getElementById('status-speed').innerText = `${data.speed} RPM`;
                 document.getElementById('status-watts').innerText = `${data.watts} W`;
                 document.getElementById('status-mode').innerText = data.mode;
-                document.getElementById('toggle-pump').innerText = data.state ? 'Turn Off' : 'Turn On';
+                document.getElementById('toggle-pump').innerText = data.state ? 'Power Off' : 'Power On';
                 document.getElementById('toggle-pump').classList.toggle('bg-primary', !data.state);
                 document.getElementById('toggle-pump').classList.toggle('bg-red-500', data.state);
+
+                // Enable stop button only when mode is not OFF
+                document.getElementById('stop-button').disabled = data.mode === 'OFF';
                 // Disabled because it conflict with input changes
                 //document.getElementById('speed').value = data.speed;
 
@@ -469,11 +473,41 @@
                 document.getElementById('time_out_timer_hours').value = data.time_out_timer[0];
                 document.getElementById('time_out_timer_minutes').value = data.time_out_timer[1];
                 document.getElementById('running_program').value = data.running_program;
+
+                // Update remote control button
+                document.getElementById('toggle-remote-control').innerText = data.remote_control ? 'Disable Remote Control' : 'Enable Remote Control';
+                document.getElementById('toggle-remote-control').classList.toggle('bg-primary', !data.remote_control);
+                document.getElementById('toggle-remote-control').classList.toggle('bg-red-500', data.remote_control);
+
                 // Load program tabs dynamically
                 loadProgramTabs(data.programs || []);
             } catch (error) {
                 console.error('Error fetching config:', error);
             }
+        }
+
+        async function toggleRemoteControl() {
+            console.log('Setting remote control state to', document.getElementById('toggle-remote-control').innerText.includes('Disable'));
+            const response = await fetch('/remote_control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ state: document.getElementById('toggle-remote-control').innerText.includes('Enable') })
+            });
+
+            if (!response.ok) {
+                alert('Failed to toggle remote control');
+                console.error('Failed to toggle remote control');
+                return;
+            }
+
+            // Update remote control button
+            const data = await response.json();
+            console.log('Remote control state updated:', data.remote_control);
+            document.getElementById('toggle-remote-control').innerText = data.remote_control ? 'Disable Remote Control' : 'Enable Remote Control';
+            document.getElementById('toggle-remote-control').classList.toggle('bg-primary', !data.remote_control);
+            document.getElementById('toggle-remote-control').classList.toggle('bg-red-500', data.remote_control);
+
+            fetchStatus();
         }
 
         async function togglePump() {
@@ -591,10 +625,10 @@
             const egg_timer_hours = parseInt(document.getElementById(`program_egg_timer_hours_${programId}`).value);
             const egg_timer_minutes = parseInt(document.getElementById(`program_egg_timer_minutes_${programId}`).value);
 
-            /*if (isNaN(rpm) || rpm < 450 || rpm > 3450) {
+            if (isNaN(rpm) || rpm < 450 || rpm > 3450) {
                 alert(`Program ${programId} RPM must be between 450 and 3450`);
                 return;
-            }*/
+            }
             if (!['MANUAL', 'EGG_TIMER', 'SCHEDULE'].includes(mode)) {
                 alert(`Invalid mode for Program ${programId}`);
                 return;
@@ -628,12 +662,23 @@
                 egg_timer: mode === 'EGG_TIMER' ? [egg_timer_hours, egg_timer_minutes] : null
             };
             console.log(`Sending program control for Program ${programId}:`, control);
-            await fetch('/program', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(control)
-            });
-            fetchConfig();
+            try {
+                const response = await fetch('/program', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(control)
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error(`Failed to update Program ${programId}:`, errorData);
+                    alert(`Failed to update Program ${programId}: "${errorData.detail || 'Unknown error'}"`);
+                    return;
+                }
+                fetchConfig();
+            } catch (error) {
+                console.error(`Error updating Program ${programId}:`, error);
+                alert(`Failed to update Program ${programId}: ${error.detail || 'Unknown error'}`);
+            }
         }
 
         async function setSelectedProgram() {

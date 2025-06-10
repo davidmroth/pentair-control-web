@@ -152,6 +152,8 @@ async def get_config():
         logger.debug(f"Pump run status: {run}")
 
         response = {
+            "run": run,
+            "remote_control": pump.remote_control,
             "ramp": pump.ramp,
             "celsius": pump.celsius,
             "fahrenheit": pump.fahrenheit,
@@ -212,6 +214,18 @@ async def stop_pump():
         return {"status": "success", "message": "Pump stopped"}
     except Exception as e:
         logger.error(f"Error stopping pump: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/remote_control")
+async def remote_control(control: RunRequest):
+    try:
+        pump = pypentair.Pump(id=PUMP_ID)
+
+        pump.remote_control = control.state
+        logger.info(f"Remote control {'enabled' if control.state else 'disabled'}")
+        return {"status": "success", "remote_control": pump.remote_control, "message": "Remote control updated"}
+    except Exception as e:
+        logger.error(f"Error updating remote control: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/control")
